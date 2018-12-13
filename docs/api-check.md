@@ -40,6 +40,45 @@ Same as `check([fields, message])`, but only checking `req.params`.
 ## `query([fields, message])`
 Same as `check([fields, message])`, but only checking `req.query`.
 
+## `checkIf(conditions, validations)`
+- `conditions`: a single or an array of [validation chains](#check-field-message) or
+  [`oneOf()`](#oneofvalidationchains-message)s that won't set errors on the request and will
+  determine whether `validations` should run.
+- `validations`: a single or an array of middlewares that will only run if all `conditions` are met.
+> *Returns:* a middleware instance
+
+Creates a middleware instance that will run all middlewares in `validations` if all `conditions` are
+met. If there are no `conditions`, or none of them are validation chains or `oneOf()`s, then `validations`
+will always run.
+
+Example:
+
+```js
+const { check, checkIf, validationResult } = require('express-validator/check');
+app.post('/update-user', [
+  // Unconditional validation: email always should be validated
+  check('username').isEmail(),
+
+  // Conditional validation: if password is provided, then validate it is at least 5 chars long
+  // and the confirmation password matches.
+  // If it isn't provided, then don't worry about it.
+  checkIf(check('password').not().isEmpty(), [
+    check('password').isLength({ min: 5 }).custom(passwordNotRepeated),
+    check('confirmPassword').custom(checkPasswordsMatch),
+  ]),
+], (req, res, next) => {
+  try {
+    validationResult(req).throw();
+
+    // Yay, user changed their username and _maybe_ changed their password as well
+    res.json(...);
+  } catch (err) {
+    // If password wasn't provided, then you won't get errors about it.
+    res.status(422).json(...);
+  }
+});
+```
+
 ## `checkSchema(schema)`
 - `schema`: the schema to validate. Must comply with the format described in [Schema Validation](feature-schema-validation.md).
 > *Returns:* an array of validation chains
