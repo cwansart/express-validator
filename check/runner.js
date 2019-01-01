@@ -11,7 +11,7 @@ module.exports = (req, context) => {
         validatorCfg.validator(toString(value), ...validatorCfg.options);
 
       return getActualResult(result).then(result => {
-        if ((!validatorCfg.negated && !result) || (validatorCfg.negated && result)) {
+        if ((!validatorCfg.negated && result === undefined) || (validatorCfg.negated && result !== undefined)) {
           return Promise.reject();
         }
       });
